@@ -24,6 +24,7 @@ const refreshTimeMinutes = argv.refresh
 const trader = new Trading();
 trader.printDateTime();
 
+// Check every refreshTimeMinutes to buy or sell
 setInterval(async () => {
     console.log("===== START =====")
 

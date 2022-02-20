@@ -3,6 +3,13 @@ const { apiKey, apiSecret } = require('./var.js')
 
 const client = new Spot(apiKey, apiSecret);
 
+/**
+* * Trading utility
+* The balances are simulated for now
+* Supports only ADAUSDT for now
+* TODO: Add support for other symbol
+* TODO: Use actual Binance account balance for trading
+*/
 class Trading {
     USDT_balance
     ADA_balance
@@ -12,6 +19,15 @@ class Trading {
         this.ADA_balance = 0;
     }
 
+    /**
+    * *Trade a crypto pair on Binance using the Moving Average methods
+    * The algorithm will buy if the price goes above the moving average
+    * The algorithm will sell if the price goes uder the moving average
+    * TODO : Selection of the method
+    * @param {String} symbol : Crypto pair to trade
+    * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
+    * @param {Number} movingAveragePeriod : Number of periods used for computing the moving average [example : 7, 25, 99]
+    */
     async trade(symbol, periodInHours, movingAvgPeriod) {
         this.printDateTime(symbol, periodInHours);
 
@@ -28,14 +44,24 @@ class Trading {
         this.printBalance();
     }
 
+    /**
+    * *Get the price of the last period for that symbol
+    * @param {String} symbol : Crypto pair to trade
+    * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
+    * @return {Number} previousPrice : Price of last period
+
+    */
     async getPreviousPrice(symbol, periodInHours) {
         const result = await client.klines(symbol, periodInHours, { limit: 2 });
-        const previous_price = result.data[0][4]
+        const previousPrice = result.data[0][4]
 
-        console.log(`===== Previous price: ${previous_price} =====`)
-        return previous_price;
+        console.log(`===== Previous price: ${previousPrice} =====`)
+        return previousPrice;
     }
 
+    /**
+    * *Prints the DateTime in the console
+    */
     printDateTime() {
         const timestamp = new Date()
         const options = {
@@ -52,6 +78,13 @@ class Trading {
         console.log(`===== DateTime : ${DateTime} =====`)
     }
 
+    /**
+    * *Calculate moving average from that symbol
+    * @param {String} symbol : Crypto pair to trade
+    * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
+    * @param {Number} movingAveragePeriod : Number of periods used for computing the moving average [example : 7, 25, 99]
+    * @return {Number} movingAvg : Computed moving average
+    */
     async getMovingAvg(symbol, periodInHours, movingAvgPeriod) {
         const result = await client.klines(symbol, periodInHours, { limit: movingAvgPeriod });
         const data = result.data
@@ -65,6 +98,11 @@ class Trading {
         return movingAvg;
     }
 
+    /**
+    * *Get instant trading price of that symbol
+    * @param {String} symbol : Crypto pair to trade
+    * @return {Number} price : Instant trading price of the symbol
+    */
     async getActualPrice(symbol) {
         const result = await client.tickerPrice("ADAUSDT");
         const price = parseFloat(result.data.price)
@@ -73,6 +111,12 @@ class Trading {
         return price;
     }
 
+    /**
+    * *Buy first token of the crypto pair
+    * TODO: Use actual Binance account balance for trading
+    * TODO: Support for other crypto pairs
+    * @param {Number} price : Token price
+    */
     buyToken(price) {
         const fee = price * 0.001
         const numberOfADA = this.USDT_balance * 1 / (price + fee)
@@ -81,6 +125,10 @@ class Trading {
         console.log(`===== Buy transaction: bought ${numberOfADA} ADA for ${price} USDT =====`)
     }
 
+    /**
+    * *Sell first token of the crypto pair
+    * @param {Number} price : Token price
+    */
     sellToken(price) {
         const fee = price * 0.001
         const numberOfADA = this.ADA_balance * 1
