@@ -37,10 +37,20 @@ module.exports = { apiKey, apiSecret }
 > ===== END =====
 
 ## Example Use :
+The following options are availables :
+```
+-t, --time : Reference period [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
+-a, --average : Number of period for computing the moving average
+-r, --refresh : Refresh time for the Bot, ie. how often will it check for the price to buy or sell
+```
 The following will launch the script using 1h periods as reference, compute the moving average over 25 periods and use a 10 min refresh for the Bot
 ```
 cd trading
-node index.js trade -t 1h -a 25 -r 10
+node index.js -t 1h -a 25 -r 10
+```
+If you launch the script without the option, it use the default
+```
+-t 1h -a 25 -r 10
 ```
 
 The script will indicate how to use it using `node index.js -h`
