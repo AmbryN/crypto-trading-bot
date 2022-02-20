@@ -43,12 +43,12 @@ The following options are availables :
 -a, --average : Number of period for computing the moving average
 -r, --refresh : Refresh time for the Bot, ie. how often will it check for the price to buy or sell
 ```
-The following will launch the script using 1h periods as reference, compute the moving average over 25 periods and use a 10 min refresh for the Bot
+The following will launch the script using 1h period as reference, compute the moving average over 25 periods and use a 10 min refresh time for the Bot
 ```
 cd trading
 node index.js -t 1h -a 25 -r 10
 ```
-If you launch the script without the option, it use the default
+If you launch the script without any option, it uses the following defaults
 ```
 -t 1h -a 25 -r 10
 ```
