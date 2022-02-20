@@ -110,7 +110,7 @@ class Trader {
     */
     async getActualPrice(symbol) {
         // Retrieve instant price
-        const result = await client.tickerPrice("ADAUSDT");
+        const result = await client.tickerPrice(symbol);
         const price = parseFloat(result.data.price)
 
         console.log(`===== Actual Price: ${price} =====`)
