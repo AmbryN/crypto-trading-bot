@@ -1,4 +1,4 @@
-const Trading = require('./trading');
+const Trader = require('./utils/trader');
 
 const argv = require('yargs/yargs')(process.argv.slice(2))
     .scriptName("trading")
@@ -21,7 +21,7 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
 const periodInHours = argv.time
 const movingAvgPeriod = argv.average
 const refreshTimeMinutes = argv.refresh
-const trader = new Trading();
+const trader = new Trader();
 trader.printDateTime();
 
 // Check every refreshTimeMinutes to buy or sell

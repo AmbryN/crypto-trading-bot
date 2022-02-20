@@ -13,7 +13,7 @@ TODO :
 
 To use the bot, you will need to :
 * Copy the repository
-* Create a `var.js` file at the root with the following content
+* Create a `var.js` file at the root which will hold your Binance Keys :
 ```
 const apiKey = 'YOUR_BINANCE_API_KEY';
 const apiSecret = 'YOUR_BINANCE_SECRET_KEY';
@@ -21,6 +21,20 @@ const apiSecret = 'YOUR_BINANCE_SECRET_KEY';
 module.exports = { apiKey, apiSecret }
 ```
 * Use your terminal to launch the script
+* The script will output the Datetime at which it has been launched followed by the DateTime, prices, executed buy/sell, and balance status after every refresh
+> ===== START =====
+>
+> ===== DateTime : dimanche 20 février 2022 à 17:42:33 =====
+> 
+> ===== Previous price: 0.93800000 =====
+> 
+> ===== Moving Average: 0.9614 =====
+> 
+> ===== Actual Price: 0.941 =====
+> 
+> ===== Balance: ADA 0 / USDT 100 =====
+> 
+> ===== END =====
 
 ## Example Use :
 The following will launch the script using 1h periods as reference, compute the moving average over 25 periods and use a 10 min refresh for the Bot

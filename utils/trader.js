@@ -10,13 +10,15 @@ const client = new Spot(apiKey, apiSecret);
 * TODO: Add support for other symbol
 * TODO: Use actual Binance account balance for trading
 */
-class Trading {
+class Trader {
     USDT_balance
     ADA_balance
+    BINANCE_FEES
 
     constructor() {
         this.USDT_balance = 100;
         this.ADA_balance = 0;
+        this.BINANCE_FEES = 0.001;
     }
 
     /**
@@ -52,6 +54,7 @@ class Trading {
 
     */
     async getPreviousPrice(symbol, periodInHours) {
+        // Retrieve the two last "candles" and get the closing price of the previous one
         const result = await client.klines(symbol, periodInHours, { limit: 2 });
         const previousPrice = result.data[0][4]
 
@@ -86,8 +89,10 @@ class Trading {
     * @return {Number} movingAvg : Computed moving average
     */
     async getMovingAvg(symbol, periodInHours, movingAvgPeriod) {
+        // Retrieve the last {movingAvgPeriod} "candles"
         const result = await client.klines(symbol, periodInHours, { limit: movingAvgPeriod });
         const data = result.data
+        // Compute the moving average
         let sum = data.reduce((accum, value) => {
             accum += parseFloat(value[4])
             return accum
@@ -104,6 +109,7 @@ class Trading {
     * @return {Number} price : Instant trading price of the symbol
     */
     async getActualPrice(symbol) {
+        // Retrieve instant price
         const result = await client.tickerPrice("ADAUSDT");
         const price = parseFloat(result.data.price)
 
@@ -118,11 +124,12 @@ class Trading {
     * @param {Number} price : Token price
     */
     buyToken(price) {
-        const fee = price * 0.001
-        const numberOfADA = this.USDT_balance * 1 / (price + fee)
+        // Fees need to be taken into account prior to purchasing
+        const fee = price * this.BINANCE_FEES;
+        const numberOfADA = this.USDT_balance * 1 / (price + fee);
         this.ADA_balance += numberOfADA;
-        this.USDT_balance -= (numberOfADA * (price + fee))
-        console.log(`===== Buy transaction: bought ${numberOfADA} ADA for ${price} USDT =====`)
+        this.USDT_balance -= (numberOfADA * (price + fee));
+        console.log(`===== Buy transaction: bought ${numberOfADA} ADA for ${price} USDT =====`);
     }
 
     /**
@@ -130,9 +137,10 @@ class Trading {
     * @param {Number} price : Token price
     */
     sellToken(price) {
-        const fee = price * 0.001
-        const numberOfADA = this.ADA_balance * 1
-        this.ADA_balance -= numberOfADA
+        // Fees need to be taken into account prior to selling
+        const fee = price * this.BINANCE_FEES;
+        const numberOfADA = this.ADA_balance * 1;
+        this.ADA_balance -= numberOfADA;
         this.USDT_balance += (numberOfADA * (price - fee))
         console.log(`===== Buy transaction: sold ${numberOfADA} ADA for ${price} USDT =====`)
     }
@@ -150,4 +158,4 @@ class Trading {
     }
 }
 
-module.exports = Trading
+module.exports = Trader
