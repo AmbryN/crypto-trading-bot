@@ -1,3 +1,5 @@
+const { getDateTime } = require('./utils/Dates');
+const { printDatetime } = require('./utils/Printer');
 const Trader = require('./utils/trader');
 
 const argv = require('yargs/yargs')(process.argv.slice(2))
@@ -24,13 +26,14 @@ const periodInHours = argv.time
 const movingAvgPeriod = argv.average
 const refreshTimeMinutes = argv.refresh
 const trader = new Trader();
-trader.printDateTime();
+printDatetime();
+trader.sellToken(1)
 
 // Check every refreshTimeMinutes to buy or sell
-setInterval(async () => {
-    console.log("===== START =====")
+// setInterval(async () => {
+//     console.log("===== START =====")
 
-    await trader.trade('ADAUSDT', periodInHours, movingAvgPeriod);
+//     await trader.trade('ADAUSDT', periodInHours, movingAvgPeriod);
 
-    console.log("===== END =====");
-}, refreshTimeMinutes * 60 * 1000);
+//     console.log("===== END =====");
+// }, refreshTimeMinutes * 60 * 1000);

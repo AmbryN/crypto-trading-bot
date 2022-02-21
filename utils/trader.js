@@ -1,5 +1,10 @@
+const fs = require('fs')
+
 const { Spot } = require('@binance/connector');
-const { apiKey, apiSecret } = require('./var.js')
+const { apiKey, apiSecret } = require('./var');
+const { floorToDecimals } = require('./Math');
+const { printBalance, printDateTime } = require('./Printer');
+const { getDateTime } = require('./Dates');
 
 const client = new Spot(apiKey, apiSecret);
 
@@ -16,8 +21,8 @@ class Trader {
     BINANCE_FEES
 
     constructor() {
-        this.USDT_balance = 100;
-        this.ADA_balance = 0;
+        this.USDT_balance = 2;
+        this.ADA_balance = 105;
         this.BINANCE_FEES = 0.001;
     }
 
@@ -31,7 +36,7 @@ class Trader {
     * @param {Number} movingAveragePeriod : Number of periods used for computing the moving average [example : 7, 25, 99]
     */
     async trade(symbol, periodInHours, movingAvgPeriod) {
-        this.printDateTime(symbol, periodInHours);
+        printDateTime();
 
         let previousPrice = await this.getPreviousPrice(symbol, periodInHours)
         let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
@@ -43,7 +48,7 @@ class Trader {
             this.sellToken(price);
         }
 
-        this.printBalance();
+        printBalance(this.ADA_balance, this.USDT_balance);
     }
 
     /**
@@ -60,25 +65,6 @@ class Trader {
 
         console.log(`===== Previous price: ${previousPrice} =====`)
         return previousPrice;
-    }
-
-    /**
-    * *Prints the DateTime in the console
-    */
-    printDateTime() {
-        const timestamp = new Date()
-        const options = {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-        }
-        const DateTime = timestamp.toLocaleDateString('fr-fr', options)
-
-        console.log(`===== DateTime : ${DateTime} =====`)
     }
 
     /**
@@ -126,10 +112,15 @@ class Trader {
     buyToken(price) {
         // Fees need to be taken into account prior to purchasing
         const fee = price * this.BINANCE_FEES;
-        const numberOfADA = this.USDT_balance * 1 / (price + fee);
+        const numberOfADA = Math.floor(this.USDT_balance * 1 / (price + fee));
+        const totalFees = floorToDecimals(numberOfADA * fee, 4);
+
         this.ADA_balance += numberOfADA;
-        this.USDT_balance -= (numberOfADA * (price + fee));
-        console.log(`===== Buy transaction: bought ${numberOfADA} ADA for ${price} USDT =====`);
+        this.USDT_balance -= numberOfADA * price - totalFees;
+
+        const log = `${getDateTime()} - BOUGHT ${numberOfADA} ADA at PRICE ${price} for a TOTAL of ${numberOfADA * price} USDT / FEES: ${totalFees}\n`
+        this.writeToFile(log);
+        console.log(log);
     }
 
     /**
@@ -139,10 +130,15 @@ class Trader {
     sellToken(price) {
         // Fees need to be taken into account prior to selling
         const fee = price * this.BINANCE_FEES;
-        const numberOfADA = this.ADA_balance * 1;
+        const numberOfADA = Math.floor(this.ADA_balance * 1);
+        const totalFees = floorToDecimals(numberOfADA * fee, 4);
+
         this.ADA_balance -= numberOfADA;
-        this.USDT_balance += (numberOfADA * (price - fee))
-        console.log(`===== Buy transaction: sold ${numberOfADA} ADA for ${price} USDT =====`)
+        this.USDT_balance += numberOfADA * (price) - totalFees;
+
+        const log = `${getDateTime()} - SOLD ${numberOfADA} ADA at PRICE ${price} for a TOTAL of ${numberOfADA * price} USDT / FEES: ${totalFees}\n`
+        this.writeToFile(log);
+        console.log(log)
     }
 
     getADABalance() {
@@ -153,8 +149,13 @@ class Trader {
         return this.USDT_balance;
     }
 
-    printBalance() {
-        console.log(`===== Balance: ADA ${this.ADA_balance} / USDT ${this.USDT_balance} =====`)
+    writeToFile(log) {
+        fs.writeFile('./logs/transactions.txt', log, { flag: 'a+' }, err => {
+            if (err) {
+                console.error(err);
+                return;
+            }
+        });
     }
 }
 
