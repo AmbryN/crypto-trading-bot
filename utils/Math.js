@@ -2,9 +2,10 @@
  * * Floors the floating point number to number of {decimals}
  * @param {Number} number 
  * @param {Number} decimals 
- * @returns {Number}
+ * @returns {Number} flooredNumber
  */
 exports.floorToDecimals = (number, decimals) => {
     const decimalCalculus = Math.pow(10, decimals)
-    return Math.floor(number * decimalCalculus) / decimalCalculus;
+    const flooredNumber = Math.floor(number * decimalCalculus) / decimalCalculus;
+    return flooredNumber;
 }

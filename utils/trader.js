@@ -37,13 +37,13 @@ class Trader {
         let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
         let price = await this.getActualPrice(symbol);
 
-        if (price > movingAvg && previousPrice < movingAvg && this.getToken2Balance() > price) {
+        if (price > movingAvg && previousPrice < movingAvg && this.token2Balance > (price * this.BINANCE_FEES)) {
             this.buyToken(price);
-        } else if (price < movingAvg && previousPrice > movingAvg && this.getToken1Balance() > 0) {
+        } else if (price < movingAvg && previousPrice > movingAvg && this.token1Balance > 0) {
             this.sellToken(price);
         }
 
-        printBalance(this.token1Balance, this.token2Balance);
+        printBalance(price, this.token1Balance, this.token2Balance);
     }
 
     /**
@@ -136,14 +136,6 @@ class Trader {
         const log = `${getDateTime()} - SOLD ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}`
         writeToFile(log);
         console.log(log);
-    }
-
-    getToken1Balance() {
-        return this.token1Balance;
-    }
-
-    getToken2Balance() {
-        return this.token2Balance;
     }
 }
 
