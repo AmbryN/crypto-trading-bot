@@ -14,8 +14,8 @@ const BINANCE_FEES = 0.001
 */
 class Trader {
 
-    token1Balance;
-    token2Balance;
+    baseBalance;
+    quoteBalance;
 
     /**
     * *Trade a crypto pair on Binance using the Moving Average methods
@@ -35,13 +35,13 @@ class Trader {
         let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
         let price = await this.getActualPrice(symbol);
 
-        if (price > movingAvg && previousPrice < movingAvg && this.token2Balance > (price * (1 + this.BINANCE_FEES))) {
+        if (price > movingAvg && previousPrice < movingAvg && this.quoteBalance > (price * (1 + this.BINANCE_FEES))) {
             this.buyToken(symbol, price);
-        } else if (price < movingAvg && previousPrice > movingAvg && this.token1Balance > 0) {
+        } else if (price < movingAvg && previousPrice > movingAvg && this.baseBalance > 0) {
             this.sellToken(symbol, price);
         }
 
-        printBalance(symbol, price, this.token1Balance, this.token2Balance);
+        printBalance(symbol, price, this.baseBalance, this.quoteBalance);
     }
 
     async setBalances(symbol) {
@@ -55,8 +55,8 @@ class Trader {
         let token1 = symbol.slice(0, 3)
         let token2 = symbol.slice(3, 7)
         let balances = account.data.balances.filter(cryptoBalance => cryptoBalance.asset === token1 || cryptoBalance.asset === token2);
-        this.token1Balance = parseFloat(balances.find(balance => balance.asset === token1).free)
-        this.token2Balance = parseFloat(balances.find(balance => balance.asset === token2).free)
+        this.baseBalance = parseFloat(balances.find(balance => balance.asset === token1).free)
+        this.quoteBalance = parseFloat(balances.find(balance => balance.asset === token2).free)
     }
 
     /**
@@ -133,11 +133,11 @@ class Trader {
 
         // Fees need to be taken into account prior to purchasing
         let fee = price * BINANCE_FEES;
-        let numberOfTokenToBuy = Math.floor(this.token2Balance * 1 / (price + fee));
+        let numberOfTokenToBuy = Math.floor(this.quoteBalance * 1 / (price + fee));
 
         let buyOrder;
         try {
-            buyOrder = await client.newOrder(symbol, 'BUY', 'LIMIT', {
+            buyOrder = await client.newOrder(symbol, 'BUY', 'MARKET', {
                 price: price,
                 quantity: numberOfTokenToBuy,
                 timeInForce: 'GTC',
@@ -163,7 +163,7 @@ class Trader {
     async sellToken(symbol, price) {
         // Fees need to be taken into account prior to selling
         let fee = price * this.BINANCE_FEES;
-        let numberOfTokenToSell = Math.floor(this.token1Balance * 1);
+        let numberOfTokenToSell = Math.floor(this.baseBalance * 1);
 
         let sellOrder = await client.newOrder(symbol, 'SELL', 'MARKET', {
             price: price,

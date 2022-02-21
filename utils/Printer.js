@@ -6,8 +6,8 @@ exports.printDatetime = () => {
     console.log(`===== DateTime : ${datetime} =====`)
 }
 
-exports.printBalance = (symbol, price, token1Balance, token2Balance) => {
-    console.log(`===== Balance ${symbol}: Token1 ${token1Balance} / Token2 ${token2Balance} - Total Value: ${token1Balance * price + token2Balance} =====`)
+exports.printBalance = (symbol, price, baseBalance, quoteBalance) => {
+    console.log(`===== Balance ${symbol}: Base token ${baseBalance} / Quote token ${quoteBalance} - Total Value: ${baseBalance * price + quoteBalance} =====`)
 }
 
 exports.writeToFile = (log) => {
