@@ -31,7 +31,7 @@ class Trader {
     * @param {Number} movingAveragePeriod : Number of periods used for computing the moving average [example : 7, 25, 99]
     */
     async trade(symbol, periodInHours, movingAvgPeriod) {
-        printDateTime();
+        printDatetime();
 
         let previousPrice = await this.getPreviousPrice(symbol, periodInHours)
         let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
@@ -43,7 +43,7 @@ class Trader {
             this.sellToken(price);
         }
 
-        printBalance(price, this.token1Balance, this.token2Balance);
+        printBalance(symbol, price, this.token1Balance, this.token2Balance);
     }
 
     /**
