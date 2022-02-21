@@ -1,13 +1,11 @@
 # Crypto Trading Bot
 
 It allows :
-* To simulate ADA/USDT transactions on binance using the Moving Average method
-* To set the observation period, the moving average number of periods and the refresh time of the bot
+* To **simulate** any Binance Spot symbol transaction using the Moving Average method on actual values of the exchange and mock balance values (on the master branch)
+* To set the observation period, the number of periods used for the moving average calculation and the refresh time of the bot
 
-TODO :
-* Use actual Binance wallet balances for simulation
-* Implement actuel trades via Binance for the crypto pair
-* Add support for other pairs
+WIP :
+* Branch "binance-balances" : **send actual Buy / Sell orders** on Binance's testnet using actual Binance wallet balances
 
 ## Use
 
@@ -18,37 +16,39 @@ To use the bot, you will need to :
 const apiKey = 'YOUR_BINANCE_API_KEY';
 const apiSecret = 'YOUR_BINANCE_SECRET_KEY';
 
-module.exports = { apiKey, apiSecret }
+// On the binance-balances branch
+module.exports = { apiKey, apiSecret, { baseURL: 'https://testnet.binance.vision' } }
 ```
 * Use your terminal to launch the script
 * The script will output the Datetime at which it has been launched followed by the DateTime, prices, executed buy/sell, and balance status after every refresh
 > ===== START =====
 >
-> ===== DateTime : dimanche 20 février 2022 à 17:42:33 =====
+> ===== DateTime : lundi 21 février 2022 à 22:24:35 =====
+>
+> ===== Previous price: 37376.97000000 =====
 > 
-> ===== Previous price: 0.93800000 =====
-> 
-> ===== Moving Average: 0.9614 =====
-> 
-> ===== Actual Price: 0.941 =====
-> 
-> ===== Balance: ADA 0 / USDT 100 =====
-> 
+> ===== Moving Average: 37345.7133 =====
+>
+> ===== Actual Price: 37271.79 =====
+>
+> ===== Balance BTCUSDT: Base token 0 / Quote token 48120.8 - Total Value: 48120.8 =====
+>
 > ===== END =====
 
 ## Example Use :
 The following options are availables :
 ```
--t, --time : Reference period [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
+-p, --pair : Crypto trade to trade
+-t, --time : Reference period [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M]
 -a, --average : Number of period for computing the moving average
 -r, --refresh : Refresh time for the Bot, ie. how often will it check for the price to buy or sell
 ```
 The following will launch the script using 1h period as reference, compute the moving average over 25 periods and use a 10 min refresh time for the Bot
 ```
 cd trading
-node index.js -t 1h -a 25 -r 10
+node index.js -p BTCUSDT -t 1h -a 25 -r 10
 ```
-If you launch the script without any option, it uses the following defaults
+If you launch the script with the pair only `-p`, it will use the following defaults for the other options
 ```
 -t 1h -a 25 -r 10
 ```
