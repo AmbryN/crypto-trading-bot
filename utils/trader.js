@@ -9,8 +9,7 @@ const client = new Spot(apiKey, apiSecret, { baseURL: 'https://testnet.binance.v
 const BINANCE_FEES = 0.001
 
 /**
-* * Trading utility
-* The balances are simulated for now
+* * Binance Trading utility
 */
 class Trader {
 
@@ -21,7 +20,6 @@ class Trader {
     * *Trade a crypto pair on Binance using the Moving Average methods
     * The algorithm will buy if the price goes above the moving average
     * The algorithm will sell if the price goes uder the moving average
-    * TODO : Selection of the method
     * @param {String} symbol : Crypto pair to trade
     * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
     * @param {Number} movingAveragePeriod : Number of periods used for computing the moving average [example : 7, 25, 99]
@@ -44,6 +42,10 @@ class Trader {
         printBalance(symbol, price, this.baseBalance, this.quoteBalance);
     }
 
+    /**
+    * * Allow to set the trader's balances using Binance's wallet
+    * @param {String} symbol : Crypto pair to trade
+    */
     async setBalances(symbol) {
         let account;
         try {
@@ -64,7 +66,6 @@ class Trader {
     * @param {String} symbol : Crypto pair to trade
     * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
     * @return {Number} previousPrice : Price of last period
-
     */
     async getPreviousPrice(symbol, periodInHours) {
         // Retrieve the two last "candles" and get the closing price of the previous one
@@ -126,8 +127,8 @@ class Trader {
     }
 
     /**
-    * *Buy first token of the crypto pair
-    * @param {Number} price : Token price
+    * *Buy Base token of the crypto pair
+    * @param {Number} price : Base token price
     */
     async buyToken(symbol, price) {
 
@@ -157,8 +158,8 @@ class Trader {
     }
 
     /**
-    * *Sell first token of the crypto pair
-    * @param {Number} price : Token price
+    * *Sell Base token of the crypto pair
+    * @param {Number} price : Base token price
     */
     async sellToken(symbol, price) {
         // Fees need to be taken into account prior to selling
