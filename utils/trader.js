@@ -1,9 +1,12 @@
 const { Spot } = require('@binance/connector');
 const { getDateTime } = require('./Dates.js');
+const { floorToDecimals } = require('./Math.js');
 const { printBalance, printDatetime, writeToFile } = require('./Printer.js');
 const { apiKey, apiSecret } = require('./var.js')
 
-const client = new Spot(apiKey, apiSecret);
+const client = new Spot(apiKey, apiSecret, { baseURL: 'https://testnet.binance.vision' });
+
+const BINANCE_FEES = 0.001
 
 /**
 * * Trading utility
@@ -11,15 +14,6 @@ const client = new Spot(apiKey, apiSecret);
 * TODO: Use actual Binance account balance for trading
 */
 class Trader {
-    token1Balance
-    token2Balance
-    BINANCE_FEES
-
-    constructor() {
-        this.token2Balance = 100;
-        this.token1Balance = 0;
-        this.BINANCE_FEES = 0.001;
-    }
 
     /**
     * *Trade a crypto pair on Binance using the Moving Average methods
@@ -32,12 +26,14 @@ class Trader {
     */
     async trade(symbol, periodInHours, movingAvgPeriod) {
         printDatetime();
-
+        let account = await client.account()
+        let balances = account.data.balances.filter(cryptoBalance => cryptoBalance.asset === 'BTC' || cryptoBalance.asset === 'USDT');
+        console.log(balances)
         let previousPrice = await this.getPreviousPrice(symbol, periodInHours)
         let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
         let price = await this.getActualPrice(symbol);
 
-        if (price > movingAvg && previousPrice < movingAvg && this.token2Balance > (price * this.BINANCE_FEES)) {
+        if (price > movingAvg && previousPrice < movingAvg && this.token2Balance > (price * (1 + this.BINANCE_FEES))) {
             this.buyToken(price);
         } else if (price < movingAvg && previousPrice > movingAvg && this.token1Balance > 0) {
             this.sellToken(price);
@@ -78,7 +74,7 @@ class Trader {
             accum += parseFloat(value[4])
             return accum
         }, 0)
-        const movingAvg = (sum / data.length).toPrecision(4)
+        const movingAvg = floorToDecimals(sum / data.length, 4)
 
         console.log(`===== Moving Average: ${movingAvg} =====`)
         return movingAvg;
@@ -112,11 +108,12 @@ class Trader {
         const totalPrice = numberOfTokenToBuy * price;
 
         this.token1Balance += numberOfTokenToBuy;
-        this.token2Balance -= totalPrice + totalFees;
+        this.token2Balance = this.token2Balance - (totalPrice + totalFees);
 
-        const log = `${getDateTime()} - BOUGHT ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}`
+        const log = `${getDateTime()} - BOUGHT ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}\n`
         writeToFile(log);
         console.log(log);
+        console.log(`Token1 ${this.token1Balance} / Token2 ${this.token2Balance}`)
     }
 
     /**
@@ -127,13 +124,13 @@ class Trader {
         // Fees need to be taken into account prior to selling
         const fee = price * this.BINANCE_FEES;
         const numberOfTokenToSell = Math.floor(this.token1Balance * 1);
-        const totalFees = numberOfTokenToBuy * fee;
-        const totalPrice = numberOfTokenToBuy * price;
+        const totalFees = floorToDecimals(numberOfTokenToSell * fee, 5);
+        const totalPrice = numberOfTokenToSell * price;
 
         this.token1Balance -= numberOfTokenToSell;
         this.token2Balance += totalPrice - totalFees
 
-        const log = `${getDateTime()} - SOLD ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}`
+        const log = `${getDateTime()} - SOLD ${numberOfTokenToSell} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}\n`
         writeToFile(log);
         console.log(log);
     }

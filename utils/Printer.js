@@ -11,7 +11,7 @@ exports.printBalance = (symbol, price, token1Balance, token2Balance) => {
 }
 
 exports.writeToFile = (log) => {
-    fs.writeFile('/logs/transactions.txt', log, { flag: 'a+' }, err => {
+    fs.writeFile('./logs/transactions.txt', log, { flag: 'a+' }, err => {
         if (err) {
             console.error(err)
             return
