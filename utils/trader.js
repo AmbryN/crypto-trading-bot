@@ -1,28 +1,23 @@
-const fs = require('fs')
-
 const { Spot } = require('@binance/connector');
-const { apiKey, apiSecret } = require('./var');
-const { floorToDecimals } = require('./Math');
-const { printBalance, printDateTime } = require('./Printer');
-const { getDateTime } = require('./Dates');
+const { getDateTime } = require('./Dates.js');
+const { printBalance, printDatetime, writeToFile } = require('./Printer.js');
+const { apiKey, apiSecret } = require('./var.js')
 
 const client = new Spot(apiKey, apiSecret);
 
 /**
 * * Trading utility
 * The balances are simulated for now
-* Supports only ADAUSDT for now
-* TODO: Add support for other symbol
 * TODO: Use actual Binance account balance for trading
 */
 class Trader {
-    USDT_balance
-    ADA_balance
+    token1Balance
+    token2Balance
     BINANCE_FEES
 
     constructor() {
-        this.USDT_balance = 2;
-        this.ADA_balance = 105;
+        this.token2Balance = 100;
+        this.token1Balance = 0;
         this.BINANCE_FEES = 0.001;
     }
 
@@ -42,13 +37,13 @@ class Trader {
         let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
         let price = await this.getActualPrice(symbol);
 
-        if (price > movingAvg && previousPrice < movingAvg && this.getUSDTBalance() > price) {
+        if (price > movingAvg && previousPrice < movingAvg && this.getToken2Balance() > price) {
             this.buyToken(price);
-        } else if (price < movingAvg && previousPrice > movingAvg && this.getADABalance() > 0) {
+        } else if (price < movingAvg && previousPrice > movingAvg && this.getToken1Balance() > 0) {
             this.sellToken(price);
         }
 
-        printBalance(this.ADA_balance, this.USDT_balance);
+        printBalance(this.token1Balance, this.token2Balance);
     }
 
     /**
@@ -112,14 +107,15 @@ class Trader {
     buyToken(price) {
         // Fees need to be taken into account prior to purchasing
         const fee = price * this.BINANCE_FEES;
-        const numberOfADA = Math.floor(this.USDT_balance * 1 / (price + fee));
-        const totalFees = floorToDecimals(numberOfADA * fee, 4);
+        const numberOfTokenToBuy = Math.floor(this.token2Balance * 1 / (price + fee));
+        const totalFees = numberOfTokenToBuy * fee;
+        const totalPrice = numberOfTokenToBuy * price;
 
-        this.ADA_balance += numberOfADA;
-        this.USDT_balance -= numberOfADA * price - totalFees;
+        this.token1Balance += numberOfTokenToBuy;
+        this.token2Balance -= totalPrice + totalFees;
 
-        const log = `${getDateTime()} - BOUGHT ${numberOfADA} ADA at PRICE ${price} for a TOTAL of ${numberOfADA * price} USDT / FEES: ${totalFees}\n`
-        this.writeToFile(log);
+        const log = `${getDateTime()} - BOUGHT ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}`
+        writeToFile(log);
         console.log(log);
     }
 
@@ -130,32 +126,24 @@ class Trader {
     sellToken(price) {
         // Fees need to be taken into account prior to selling
         const fee = price * this.BINANCE_FEES;
-        const numberOfADA = Math.floor(this.ADA_balance * 1);
-        const totalFees = floorToDecimals(numberOfADA * fee, 4);
+        const numberOfTokenToSell = Math.floor(this.token1Balance * 1);
+        const totalFees = numberOfTokenToBuy * fee;
+        const totalPrice = numberOfTokenToBuy * price;
 
-        this.ADA_balance -= numberOfADA;
-        this.USDT_balance += numberOfADA * (price) - totalFees;
+        this.token1Balance -= numberOfTokenToSell;
+        this.token2Balance += totalPrice - totalFees
 
-        const log = `${getDateTime()} - SOLD ${numberOfADA} ADA at PRICE ${price} for a TOTAL of ${numberOfADA * price} USDT / FEES: ${totalFees}\n`
-        this.writeToFile(log);
-        console.log(log)
+        const log = `${getDateTime()} - SOLD ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}`
+        writeToFile(log);
+        console.log(log);
     }
 
-    getADABalance() {
-        return this.ADA_balance;
+    getToken1Balance() {
+        return this.token1Balance;
     }
 
-    getUSDTBalance() {
-        return this.USDT_balance;
-    }
-
-    writeToFile(log) {
-        fs.writeFile('./logs/transactions.txt', log, { flag: 'a+' }, err => {
-            if (err) {
-                console.error(err);
-                return;
-            }
-        });
+    getToken2Balance() {
+        return this.token2Balance;
     }
 }
 
