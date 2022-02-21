@@ -1,7 +1,7 @@
 # Crypto Trading Bot
 
 It allows :
-* To **send actual Buy / Sell orders** on Binance's testnet using actual Binance wallet balances 
+* To **send Buy / Sell orders** on Binance's testnet using actual Binance wallet balances 
 * To trade any Binance Spot symbol (available on the Testnet) using the Moving Average method on actual values of the testnet exchange
 * To set the observation period, the number of periods used for the moving average calculation and the refresh time of the bot
 
@@ -37,7 +37,7 @@ module.exports = { apiKey, apiSecret, { baseURL: 'https://testnet.binance.vision
 ## Example Use :
 The following options are availables :
 ```
--p, --pair : Crypto trade to trade
+-p, --pair : Crypto pair to trade
 -t, --time : Reference period [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M]
 -a, --average : Number of period for computing the moving average
 -r, --refresh : Refresh time for the Bot, ie. how often will it check for the price to buy or sell
