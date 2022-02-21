@@ -2,7 +2,7 @@ const { printDatetime } = require('./utils/Printer');
 const Trader = require('./utils/trader');
 
 const argv = require('yargs/yargs')(process.argv.slice(2))
-    .scriptName("trading")
+    .scriptName("index.js")
     .usage('Usage: $0 <command> [options]')
     .example('$0 -p ADAUSDT -t 1h -a 25 -r 10', 'Trade with 1 hour time period, using a moving average of 25 periods and a refresh time of 10 min')
     .demandOption(['p', 't', 'a', 'r'])
