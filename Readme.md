@@ -1,11 +1,10 @@
 # Crypto Trading Bot
 
 It allows :
-* To **simulate** any Binance Spot symbol transaction using the Moving Average method on actual values of the exchange and mock balance values (on the master branch)
+* To **send actual Buy / Sell orders** on Binance's testnet using actual Binance wallet balances 
+* To trade any Binance Spot symbol (available on the Testnet) using the Moving Average method on actual values of the testnet exchange
 * To set the observation period, the number of periods used for the moving average calculation and the refresh time of the bot
 
-WIP :
-* Branch "binance-balances" : **send actual Buy / Sell orders** on Binance's testnet using actual Binance wallet balances
 
 ## Use
 
