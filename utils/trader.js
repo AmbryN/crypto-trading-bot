@@ -15,6 +15,9 @@ const BINANCE_FEES = 0.001
 */
 class Trader {
 
+    token1Balance;
+    token2Balance;
+
     /**
     * *Trade a crypto pair on Binance using the Moving Average methods
     * The algorithm will buy if the price goes above the moving average
@@ -26,9 +29,9 @@ class Trader {
     */
     async trade(symbol, periodInHours, movingAvgPeriod) {
         printDatetime();
-        let account = await client.account()
-        let balances = account.data.balances.filter(cryptoBalance => cryptoBalance.asset === 'BTC' || cryptoBalance.asset === 'USDT');
-        console.log(balances)
+
+        this.setBalances(symbol);
+
         let previousPrice = await this.getPreviousPrice(symbol, periodInHours)
         let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
         let price = await this.getActualPrice(symbol);
@@ -40,6 +43,15 @@ class Trader {
         }
 
         printBalance(symbol, price, this.token1Balance, this.token2Balance);
+    }
+
+    async setBalances(symbol) {
+        let account = await client.account()
+        let token1 = symbol.slice(0, 3)
+        let token2 = symbol.slice(3, 7)
+        let balances = account.data.balances.filter(cryptoBalance => cryptoBalance.asset === token1 || cryptoBalance.asset === token2);
+        this.token1Balance = parseFloat(balances.find(balance => balance.asset === token1).free)
+        this.token2Balance = parseFloat(balances.find(balance => balance.asset === token2).free)
     }
 
     /**
