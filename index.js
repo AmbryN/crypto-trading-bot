@@ -1,41 +1,55 @@
 const { printDatetime } = require('./utils/Printer');
-const Trader = require('./utils/trader');
+const Trader = require('./utils/Trader');
 
 const argv = require('yargs/yargs')(process.argv.slice(2))
     .scriptName("index.js")
     .usage('Usage: $0 <command> [options]')
     .example('$0 -p ADAUSDT -t 1h -a 25 -r 10', 'Trade with 1 hour time period, using a moving average of 25 periods and a refresh time of 10 min')
+    .demandCommand(1)
+    .command('trade', 'Trade crypto on Binance\'s testnet', () => { }, (argv) => trade(argv, simulated = false))
+    .command('sim', 'Simulate trades using a fake balance but actual prices from Binance', () => { }, (argv) => trade(argv, simulated = true))
     .demandOption(['p', 't', 'a', 'r'])
-    .alias('p', 'pair')
-    .nargs('p', 1)
-    .describe('p', 'Crypto Pair')
-    .alias('t', 'time')
-    .default('t', '1h')
-    .nargs('t', 1)
-    .describe('t', 'Time period')
-    .alias('a', 'average')
-    .nargs('a', 1)
-    .default('a', 25)
-    .describe('a', 'Number of Moving Average periods')
-    .alias('r', 'refresh')
-    .nargs('r', 1)
-    .default('r', 10)
-    .describe('r', 'Refresh rate of trading bot in minutes')
+    .option('p', {
+        alias: 'pair',
+        nargs: 1,
+        describe: 'Crypto Pair',
+    })
+    .option('t', {
+        alias: 'time',
+        default: '1h',
+        nargs: 1,
+        describe: 'Time period',
+    })
+    .option('a', {
+        alias: 'average',
+        default: '25',
+        nargs: 1,
+        describe: 'Moving Average periods',
+    })
+    .option('r', {
+        alias: 'refresh',
+        default: '10',
+        nargs: 1,
+        describe: 'Refresh rate of the bot in minutes',
+    })
     .help('h')
     .argv;
 
-const pair = argv.pair;
-const periodInHours = argv.time
-const movingAvgPeriod = argv.average
-const refreshTimeMinutes = argv.refresh
-const trader = new Trader();
-printDatetime();
+function trade(argv, simulated) {
+    const pair = argv.pair;
+    const periodInHours = argv.time
+    const movingAvgPeriod = argv.average
+    const refreshTimeMinutes = argv.refresh
 
-// Check every refreshTimeMinutes to buy or sell
-setInterval(async () => {
-    console.log("===== START =====")
+    printDatetime();
 
-    await trader.trade(pair, periodInHours, movingAvgPeriod);
+    const trader = new Trader(simulated = simulated);
 
-    console.log("===== END =====");
-}, refreshTimeMinutes * 60 * 1000);
+    setInterval(async () => {
+        console.log("===== START =====")
+
+        await trader.trade(pair, periodInHours, movingAvgPeriod);
+
+        console.log("===== END =====");
+    }, refreshTimeMinutes * 60 * 1000);
+}
