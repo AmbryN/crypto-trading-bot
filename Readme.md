@@ -1,22 +1,33 @@
 # Crypto Trading Bot
 
 It allows :
-* To **send Buy / Sell orders** on Binance's testnet using actual Binance wallet balances 
-* To trade any Binance Spot symbol (available on the Testnet) using the Moving Average method on actual values of the testnet exchange
+* To choose between **Simulation mode**, which allows to trade using mock balances using actual binances prices, and **Trade mode**, which allows to send actual buy and sell order using actual Binance wallet balance on Binance's testnet
+* To trade any Binance Spot symbol using the Moving Average method on actual values of the testnet exchange
 * To set the observation period, the number of periods used for the moving average calculation and the refresh time of the bot
-
 
 ## Use
 
 To use the bot, you will need to :
 * Copy the repository
-* Create a `var.js` file at the root which will hold your Binance Keys :
+* `cd crypto-trading-bot`
+* Use `npm install`
+* Create a `Keys.js` file in the `/utils` directory, which will hold your Binance Keys for both Environments:
 ```
-const apiKey = 'YOUR_BINANCE_API_KEY';
-const apiSecret = 'YOUR_BINANCE_SECRET_KEY';
+function getAPIKeys(simulated) {
+    let apiKey, apiSecret;
+    if (simulated) {
+        // Actual Binance values
+        apiKey = 'YOUR_BINANCE_API_KEY';
+        apiSecret = 'YOUR_BINANCE_SECRET_KEY';
+    } else {
+        // Testnet prices
+        apiKey = 'YOUR_BINANCES_TESTNET_API_KEY';
+        apiSecret = 'YOUR_BINANCES_TESTNET_SECRET_KEY';
 
-// On the binance-balances branch
-module.exports = { apiKey, apiSecret, { baseURL: 'https://testnet.binance.vision' } }
+    }
+    return { apiKey, apiSecret };
+}
+module.exports = { getAPIKeys }
 ```
 * Use your terminal to launch the script
 * The script will output the Datetime at which it has been launched followed by the DateTime, prices, executed buy/sell, and balance status after every refresh
@@ -37,19 +48,24 @@ module.exports = { apiKey, apiSecret, { baseURL: 'https://testnet.binance.vision
 ## Example Use :
 The following options are availables :
 ```
--p, --pair : Crypto pair to trade
--t, --time : Reference period [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M]
--a, --average : Number of period for computing the moving average
--r, --refresh : Refresh time for the Bot, ie. how often will it check for the price to buy or sell
-```
-The following will launch the script using 1h period as reference, compute the moving average over 25 periods and use a 10 min refresh time for the Bot
-```
-cd trading
-node index.js -p BTCUSDT -t 1h -a 25 -r 10
-```
-If you launch the script with the pair only `-p`, it will use the following defaults for the other options
-```
--t 1h -a 25 -r 10
+Usage: index.js <command> [options]
+
+Commandes :
+  index.js trade  Trade crypto on Binance's testnet
+  index.js sim    Simulate trades using a fake balance but actual prices from Binance
+
+Options :
+      --version  Affiche le numéro de version                          [booléen]
+  -p, --pair     Crypto Pair                                            [requis]
+  -t, --time     Time period                            [requis] [défaut : "1h"]
+  -a, --average  Moving Average periods                 [requis] [défaut : "25"]
+  -r, --refresh  Refresh rate of the bot in minutes     [requis] [défaut : "10"]
+  -h             Affiche l'aide                                        [booléen]
+
+Exemples :
+  index.js trade -p ADAUSDT -t 1h -a 25 -r  Trade with 1 hour time period, using
+  10                                        a moving average of 25 periods and a
+                                            refresh time of 10 min
 ```
 
 The script will indicate how to use it using `node index.js -h`

@@ -4,7 +4,7 @@ const Trader = require('./utils/Trader');
 const argv = require('yargs/yargs')(process.argv.slice(2))
     .scriptName("index.js")
     .usage('Usage: $0 <command> [options]')
-    .example('$0 -p ADAUSDT -t 1h -a 25 -r 10', 'Trade with 1 hour time period, using a moving average of 25 periods and a refresh time of 10 min')
+    .example('$0 trade -p ADAUSDT -t 1h -a 25 -r 10', 'Trade with 1 hour time period, using a moving average of 25 periods and a refresh time of 10 min')
     .demandCommand(1)
     .command('trade', 'Trade crypto on Binance\'s testnet', () => { }, (argv) => trade(argv, simulated = false))
     .command('sim', 'Simulate trades using a fake balance but actual prices from Binance', () => { }, (argv) => trade(argv, simulated = true))
