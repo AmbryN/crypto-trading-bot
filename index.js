@@ -11,6 +11,7 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
     .demandOption(['p', 't', 'a', 'r'])
     .option('p', {
         alias: 'pair',
+        default: 'BTCUSDT',
         nargs: 1,
         describe: 'Crypto Pair',
     })
@@ -37,18 +38,18 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
 
 function trade(argv, simulated) {
     const pair = argv.pair;
-    const periodInHours = argv.time
+    const period = argv.time
     const movingAvgPeriod = argv.average
     const refreshTimeMinutes = argv.refresh
 
     printDatetime();
 
-    const trader = new Trader(simulated = simulated);
+    const trader = new Trader(simulated = simulated, pair, period, movingAvgPeriod);
 
     setInterval(async () => {
         console.log("===== START =====")
 
-        await trader.trade(pair, periodInHours, movingAvgPeriod);
+        await trader.trade();
 
         console.log("===== END =====");
     }, refreshTimeMinutes * 60 * 1000);

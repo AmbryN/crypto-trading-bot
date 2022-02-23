@@ -11,24 +11,34 @@ const BINANCE_FEES = 0.001
 */
 class Trader {
 
+    simulated;
+    client;
+    symbol;
     baseBalance;
     quoteBalance;
-    simulated;
-    client
+    period;
+    movingAvgPeriod;
 
-    constructor(simulated) {
+    constructor(simulated, symbol, periodInHours, movingAvgPeriod) {
         this.simulated = simulated;
-        this.client = this.getClient(simulated);
+        this.symbol = symbol;
+        this.period = periodInHours;
+        this.movingAvgPeriod = movingAvgPeriod;
+        this.client = this.getClient();
         if (simulated) {
-            this.baseBalance = 100;
-            this.quoteBalance = 10000;
+            this.baseBalance = 0;
+            this.quoteBalance = 100000;
         }
     }
 
-    getClient(simulated) {
-        let { apiKey, apiSecret } = getAPIKeys(simulated);
+    /**
+    * * Gets the client depending on the environment (trade or simulation) 
+    * @returns {Object} client
+    */
+    getClient() {
+        let { apiKey, apiSecret } = getAPIKeys(this.simulated);
         let options;
-        if (simulated) {
+        if (this.simulated) {
             options = {
                 baseURL: 'https://api.binance.com',
             }
@@ -45,35 +55,31 @@ class Trader {
     * *Trade a crypto pair on Binance using the Moving Average methods
     * The algorithm will buy if the price goes above the moving average
     * The algorithm will sell if the price goes uder the moving average
-    * @param {String} symbol : Crypto pair to trade
-    * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
-    * @param {Number} movingAveragePeriod : Number of periods used for computing the moving average [example : 7, 25, 99]
     */
-    async trade(symbol, periodInHours, movingAvgPeriod) {
+    async trade() {
         printDatetime();
 
-        if (!this.simulated) await this.getBalances(symbol);
+        if (!this.simulated) await this.getBalances();
 
-        let prices = await this.getPrices(symbol, periodInHours, movingAvgPeriod)
-
+        let prices = await this.getPrices()
         let price = prices.price;
+
         if (this.shouldBuy(prices)) {
-            await this.buyToken(symbol, price);
+            await this.buyToken(price);
         } else if (this.shouldSell(prices)) {
-            await this.sellToken(symbol, price);
+            await this.sellToken(price);
         }
 
-        await this.getBalances(symbol);
-        printBalance(symbol, price, this.baseBalance, this.quoteBalance);
+        await this.getBalances();
+        printBalance(this.symbol, price, this.baseBalance, this.quoteBalance);
     }
 
     /**
     * * Gets the user's balance on binance 
-    * @param {String} symbol : Crypto pair to trade
     */
-    async getBalances(symbol) {
-        let baseToken = symbol.slice(0, 3)
-        let quoteToken = symbol.slice(3, 7)
+    async getBalances() {
+        let baseToken = this.symbol.slice(0, 3)
+        let quoteToken = this.symbol.slice(3, 7)
 
         if (!this.simulated) {
             let account;
@@ -90,10 +96,14 @@ class Trader {
         }
     }
 
-    async getPrices(symbol, periodInHours, movingAvgPeriod) {
-        let previousPrice = await this.getPreviousPrice(symbol, periodInHours)
-        let movingAvg = await this.getMovingAvg(symbol, periodInHours, movingAvgPeriod);
-        let price = await this.getActualPrice(symbol);
+    /**
+    * * Gets the prices used for the Moving Average algorithm 
+    * @returns {Object} prices
+    */
+    async getPrices() {
+        let previousPrice = await this.getPreviousPrice()
+        let movingAvg = await this.getMovingAvg();
+        let price = await this.getActualPrice();
         return {
             previousPrice,
             movingAvg,
@@ -101,11 +111,17 @@ class Trader {
         }
     }
 
+    /**
+    * * Used to check if Bot should buy token 
+    */
     shouldBuy(prices) {
         let { previousPrice, movingAvg, price } = prices;
-        return price > movingAvg && previousPrice < movingAvg && this.quoteBalance > (price * (1 + this.BINANCE_FEES));
+        return price > movingAvg && previousPrice < movingAvg && this.quoteBalance > (price * (1 + BINANCE_FEES));
     }
 
+    /**
+    * * Used to check if Bot should sell token 
+    */
     shouldSell(prices) {
         let { previousPrice, movingAvg, price } = prices;
         return price < movingAvg && previousPrice > movingAvg && this.baseBalance > 0
@@ -113,31 +129,26 @@ class Trader {
 
     /**
     * *Get the price of the last period for that symbol
-    * @param {String} symbol : Crypto pair to trade
-    * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
     * @return {Number} previousPrice : Price of last period
     */
-    async getPreviousPrice(symbol, periodInHours) {
+    async getPreviousPrice() {
         // Retrieve the two last "candles" and get the closing price of the previous one
-        const result = await this.client.klines(symbol, periodInHours, { limit: 2 });
+        const result = await this.client.klines(this.symbol, this.period, { limit: 2 });
         let previousPrice = result.data[0][4]
 
-        console.log(`===== Previous price: ${previousPrice} =====`)
+        console.log(`===== Previous price: ${previousPrice} ===== `)
         return previousPrice;
     }
 
     /**
     * *Calculate moving average from that symbol
-    * @param {String} symbol : Crypto pair to trade
-    * @param {String} periodInHours : Time period used for computing the moving average [1min, 3min, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w]
-    * @param {Number} movingAveragePeriod : Number of periods used for computing the moving average [example : 7, 25, 99]
     * @return {Number} movingAvg : Computed moving average
     */
-    async getMovingAvg(symbol, periodInHours, movingAvgPeriod) {
+    async getMovingAvg() {
         // Retrieve the last {movingAvgPeriod} "candles"
         let result;
         try {
-            result = await this.client.klines(symbol, periodInHours, { limit: movingAvgPeriod });
+            result = await this.client.klines(this.symbol, this.period, { limit: this.movingAvgPeriod });
         } catch (err) {
             console.error(`Error: ${err}`);
             return;
@@ -151,20 +162,19 @@ class Trader {
         }, 0)
         let movingAvg = floorToDecimals(sum / data.length, 4)
 
-        console.log(`===== Moving Average: ${movingAvg} =====`)
+        console.log(`===== Moving Average: ${movingAvg} ===== `)
         return movingAvg;
     }
 
     /**
     * *Get instant trading price of that symbol
-    * @param {String} symbol : Crypto pair to trade
     * @return {Number} price : Instant trading price of the symbol
     */
-    async getActualPrice(symbol) {
+    async getActualPrice() {
         // Retrieve instant price
         let result;
         try {
-            result = await this.client.tickerPrice(symbol);
+            result = await this.client.tickerPrice(this.symbol);
         } catch (err) {
             console.error(`Error: ${err}`);
             return;
@@ -172,7 +182,7 @@ class Trader {
 
         let price = parseFloat(result.data.price)
 
-        console.log(`===== Actual Price: ${price} =====`)
+        console.log(`===== Actual Price: ${price} ===== `)
         return price;
     }
 
@@ -180,18 +190,17 @@ class Trader {
     * *Buy Base token of the crypto pair
     * @param {Number} price : Base token price
     */
-    async buyToken(symbol, price) {
+    async buyToken(price) {
         // Fees need to be taken into account prior to purchasing
-        let fee = price * BINANCE_FEES;
-        let numberOfTokenToBuy = Math.floor(this.quoteBalance * 1 / (price + fee));
+        let numberOfTokenToBuy = Math.floor(this.quoteBalance * 1 / (price * (1 + BINANCE_FEES)));
 
         if (simulated) {
             this.baseBalance += numberOfTokenToBuy;
-            this.quoteBalance -= numberOfTokenToBuy * (price * (1 + fee));
+            this.quoteBalance -= numberOfTokenToBuy * (price * (1 + BINANCE_FEES));
         } else {
             let buyOrder;
             try {
-                buyOrder = await this.client.newOrder(symbol, 'BUY', 'MARKET', {
+                buyOrder = await this.client.newOrder(this.symbol, 'BUY', 'MARKET', {
                     price: price,
                     quantity: numberOfTokenToBuy,
                     timeInForce: 'GTC',
@@ -205,7 +214,7 @@ class Trader {
         }
 
         let totalPrice = numberOfTokenToBuy * price;
-        let totalFees = numberOfTokenToBuy * price * fee;
+        let totalFees = numberOfTokenToBuy * price * BINANCE_FEES;
 
         let log = `${getDateTime()} - BOUGHT ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}\n`
         writeToFile(log);
@@ -216,18 +225,17 @@ class Trader {
     * *Sell Base token of the crypto pair
     * @param {Number} price : Base token price
     */
-    async sellToken(symbol, price) {
+    async sellToken(price) {
         // Fees need to be taken into account prior to selling
-        let fee = price * this.BINANCE_FEES;
         let numberOfTokenToSell = Math.floor(this.baseBalance * 1);
 
         if (simulated) {
-            this.baseBalance += numberOfTokenToSell;
-            this.quoteBalance -= numberOfTokenToSell * (price * (1 + fee));
+            this.baseBalance -= numberOfTokenToSell;
+            this.quoteBalance += numberOfTokenToSell * (price * (1 + BINANCE_FEES));
         } else {
             let sellOrder;
             try {
-                sellOrder = await this.client.newOrder(symbol, 'SELL', 'MARKET', {
+                sellOrder = await this.client.newOrder(this.symbol, 'SELL', 'MARKET', {
                     price: price,
                     quantity: numberOfTokenToSell,
                     timeInForce: 'GTC',
@@ -241,7 +249,7 @@ class Trader {
         }
 
         let totalPrice = numberOfTokenToSell * price;
-        let totalFees = numberOfTokenToSell * price * fee;
+        let totalFees = numberOfTokenToSell * price * BINANCE_FEES;
 
         let log = `${getDateTime()} - SOLD ${numberOfTokenToSell} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}\n`
         writeToFile(log);
