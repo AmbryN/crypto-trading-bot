@@ -5,7 +5,10 @@ It allows :
 * To trade any Binance Spot symbol using the Moving Average method on actual values of the testnet exchange
 * To set the observation period, the number of periods used for the moving average calculation and the refresh time of the bot
 
-## Use
+## Todo
+* Add support for other trading algorithms
+
+## Usage
 
 To use the bot, you will need to :
 * Copy the repository
@@ -29,8 +32,8 @@ function getAPIKeys(simulated) {
 }
 module.exports = { getAPIKeys }
 ```
-* Use your terminal to launch the script
-* The script will output the Datetime at which it has been launched followed by the DateTime, prices, executed buy/sell, and balance status after every refresh
+* Use your terminal to launch the script using `node index.js <command> [options]`
+* The script will output the Datetime at which it has been launched followed by the prices, executed buy/sell, and balances after every refresh
 > ===== START =====
 >
 > ===== DateTime : lundi 21 février 2022 à 22:24:35 =====

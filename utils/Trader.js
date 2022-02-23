@@ -215,8 +215,9 @@ class Trader {
 
         let totalPrice = numberOfTokenToBuy * price;
         let totalFees = numberOfTokenToBuy * price * BINANCE_FEES;
+        let portfolioValue = this.baseBalance * price + this.quoteBalance;
 
-        let log = `${getDateTime()} - BOUGHT ${numberOfTokenToBuy} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}\n`
+        let log = `!!!!! ${getDateTime()} - BOUGHT ${numberOfTokenToBuy} at PRICE ${price} for TOTAL ${totalPrice} - FEES: ${totalFees} - PORTFOLIO: ${portfolioValue}\n`
         writeToFile(log);
         console.log(log);
     }
@@ -250,8 +251,9 @@ class Trader {
 
         let totalPrice = numberOfTokenToSell * price;
         let totalFees = numberOfTokenToSell * price * BINANCE_FEES;
+        let portfolioValue = this.baseBalance * price + this.quoteBalance;
 
-        let log = `${getDateTime()} - SOLD ${numberOfTokenToSell} token at PRICE ${price} for a TOTAL of ${totalPrice} / FEES: ${totalFees}\n`
+        let log = `!!!!! ${getDateTime()} - SOLD ${numberOfTokenToSell} at PRICE ${price} for TOTAL ${totalPrice} - FEES: ${totalFees} - PORTFOLIO: ${portfolioValue}\n`
         writeToFile(log);
         console.log(log);
     }
