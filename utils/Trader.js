@@ -122,7 +122,7 @@ class Trader {
     */
     shouldBuy(prices) {
         let { previousPrice, movingAvg, price } = prices;
-        return price > movingAvg && previousPrice < movingAvg && this.quoteBalance > 10);
+        return price > movingAvg && previousPrice < movingAvg && this.quoteBalance > 10;
     }
 
     /**
