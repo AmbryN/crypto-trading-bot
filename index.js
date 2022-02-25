@@ -4,16 +4,23 @@ const Trader = require('./utils/Trader');
 const argv = require('yargs/yargs')(process.argv.slice(2))
     .scriptName("index.js")
     .usage('Usage: $0 <command> [options]')
-    .example('$0 trade -p ADAUSDT -t 1h -a 25 -r 10', 'Trade with 1 hour time period, using a moving average of 25 periods and a refresh time of 10 min')
+    .example('$0 trade -c ADAUSDT -t 1h -a 25 -r 10', 'Trade with 1 hour time period, using a moving average of 25 periods and a refresh time of 10 min')
     .demandCommand(1)
-    .command('trade', 'Trade crypto on Binance\'s testnet', () => { }, (argv) => trade(argv, simulated = false))
-    .command('sim', 'Simulate trades using a fake balance but actual prices from Binance', () => { }, (argv) => trade(argv, simulated = true))
-    .demandOption(['p', 't', 'a', 'r'])
-    .option('p', {
-        alias: 'pair',
+    .command('trade', '!!!CAUTION!!!: Trade actual crypto on Binance', () => { }, (argv) => trade(argv, env = 'PROD'))
+    .command('test', 'TESTMODE: Trade on Binance\'s testnet', () => { }, (argv) => trade(argv, env = 'TEST'))
+    .command('sim', 'SIMULATION: Simulate trades using a fake balance but actual prices from Binance', () => { }, (argv) => trade(argv, env = 'SIM'))
+    .demandOption(['c', 'p', 't', 'a', 'r'])
+    .option('c', {
+        alias: 'crypto',
         default: 'BTCUSDT',
         nargs: 1,
         describe: 'Crypto Pair',
+    })
+    .option('p', {
+        alias: 'percentage',
+        default: '100',
+        nargs: 1,
+        describe: '% of quote balance used for trading',
     })
     .option('t', {
         alias: 'time',
@@ -36,15 +43,16 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
     .help('h')
     .argv;
 
-function trade(argv, simulated) {
-    const pair = argv.pair;
+function trade(argv, env) {
+    const pair = argv.crypto;
+    const percentage = argv.percentage;
     const period = argv.time
     const movingAvgPeriod = argv.average
     const refreshTimeMinutes = argv.refresh
 
     printDatetime();
 
-    const trader = new Trader(simulated = simulated, pair, period, movingAvgPeriod);
+    const trader = new Trader(env, pair, percentage, period, movingAvgPeriod);
 
     setInterval(async () => {
         console.log("===== START =====")

@@ -4,30 +4,34 @@ const { floorToDecimals } = require('./Math.js');
 const { printBalance, printDatetime, writeToFile } = require('./Printer.js');
 const { getAPIKeys } = require('./Keys.js')
 
-const BINANCE_FEES = 0.001
-
 /**
 * * Binance Trading utility
 */
 class Trader {
 
-    simulated;
+    env;
     client;
+    makerCommission;
+    takerCommission;
     symbol;
     baseBalance;
     quoteBalance;
+    percentage;
     period;
     movingAvgPeriod;
 
-    constructor(simulated, symbol, periodInHours, movingAvgPeriod) {
-        this.simulated = simulated;
+    constructor(env, symbol, percentage, period, movingAvgPeriod) {
+        this.env = env;
         this.symbol = symbol;
-        this.period = periodInHours;
+        this.period = period;
         this.movingAvgPeriod = movingAvgPeriod;
+        this.percentage = percentage / 100;
         this.client = this.getClient();
-        if (simulated) {
+        if (this.env === "SIM") {
             this.baseBalance = 0;
             this.quoteBalance = 100000;
+            this.makerCommission = 0.001;
+            this.takerCommission = 0.001;
         }
     }
 
@@ -36,13 +40,13 @@ class Trader {
     * @returns {Object} client
     */
     getClient() {
-        let { apiKey, apiSecret } = getAPIKeys(this.simulated);
+        let { apiKey, apiSecret } = getAPIKeys(this.env);
         let options;
-        if (this.simulated) {
+        if (this.env === 'PROD' || this.env === 'SIM') {
             options = {
                 baseURL: 'https://api.binance.com',
             }
-        } else {
+        } else if (this.env === 'TEST') {
             options = {
                 baseURL: 'https://testnet.binance.vision'
             }
@@ -59,7 +63,7 @@ class Trader {
     async trade() {
         printDatetime();
 
-        if (!this.simulated) await this.getBalances();
+        if (!(this.env === 'SIM')) await this.getBalances();
 
         let prices = await this.getPrices()
         let price = prices.price;
@@ -81,7 +85,7 @@ class Trader {
         let baseToken = this.symbol.slice(0, 3)
         let quoteToken = this.symbol.slice(3, 7)
 
-        if (!this.simulated) {
+        if (!(this.env === 'SIM')) {
             let account;
             try {
                 account = await this.client.account();
@@ -91,6 +95,8 @@ class Trader {
             }
 
             let balances = account.data.balances.filter(cryptoBalance => cryptoBalance.asset === baseToken || cryptoBalance.asset === quoteToken);
+            this.makerCommission = account.data.makerCommission / 10000;
+            this.takerCommission = account.data.takerCommission / 10000;
             this.baseBalance = parseFloat(balances.find(balance => balance.asset === baseToken).free)
             this.quoteBalance = parseFloat(balances.find(balance => balance.asset === quoteToken).free)
         }
@@ -116,7 +122,7 @@ class Trader {
     */
     shouldBuy(prices) {
         let { previousPrice, movingAvg, price } = prices;
-        return price > movingAvg && previousPrice < movingAvg && this.quoteBalance > (price * (1 + BINANCE_FEES));
+        return price > movingAvg && previousPrice < movingAvg && this.quoteBalance > (price * (1 + this.takerCommission));
     }
 
     /**
@@ -124,7 +130,8 @@ class Trader {
     */
     shouldSell(prices) {
         let { previousPrice, movingAvg, price } = prices;
-        return price < movingAvg && previousPrice > movingAvg && this.baseBalance > 0
+        let should = price < movingAvg && previousPrice > movingAvg && this.baseBalance > 0
+        return should
     }
 
     /**
@@ -191,16 +198,15 @@ class Trader {
     * @param {Number} price : Base token price
     */
     async buyToken(price) {
-        // Fees need to be taken into account prior to purchasing
-        let numberOfTokenToBuy = Math.floor(this.quoteBalance * 1 / (price * (1 + BINANCE_FEES)));
+        let numberOfTokenToBuy = floorToDecimals((this.quoteBalance * this.percentage) / (price * (1 + this.takerCommission)), 5);
 
-        if (simulated) {
+        if (this.env === 'SIM') {
             this.baseBalance += numberOfTokenToBuy;
-            this.quoteBalance -= numberOfTokenToBuy * (price * (1 + BINANCE_FEES));
+            this.quoteBalance -= numberOfTokenToBuy * (price * (1 + this.takerCommission));
         } else {
             let buyOrder;
             try {
-                buyOrder = await this.client.newOrder(this.symbol, 'BUY', 'MARKET', {
+                buyOrder = await this.client.newOrder(this.symbol, 'BUY', 'LIMIT', {
                     price: price,
                     quantity: numberOfTokenToBuy,
                     timeInForce: 'GTC',
@@ -212,10 +218,9 @@ class Trader {
 
             console.log(buyOrder.data)
         }
-
         let totalPrice = numberOfTokenToBuy * price;
-        let totalFees = numberOfTokenToBuy * price * BINANCE_FEES;
-        let portfolioValue = this.baseBalance * price + this.quoteBalance;
+        let totalFees = totalPrice * this.takerCommission;
+        let portfolioValue = totalPrice + this.quoteBalance - totalPrice - totalFees;
 
         let log = `!!!!! ${getDateTime()} - BOUGHT ${numberOfTokenToBuy} at PRICE ${price} for TOTAL ${totalPrice} - FEES: ${totalFees} - PORTFOLIO: ${portfolioValue}\n`
         writeToFile(log);
@@ -227,18 +232,17 @@ class Trader {
     * @param {Number} price : Base token price
     */
     async sellToken(price) {
-        // Fees need to be taken into account prior to selling
-        let numberOfTokenToSell = Math.floor(this.baseBalance * 1);
+        if (this.env === 'SIM') {
+            let numberOfTokenToSell = this.baseBalance;
 
-        if (simulated) {
             this.baseBalance -= numberOfTokenToSell;
-            this.quoteBalance += numberOfTokenToSell * (price * (1 + BINANCE_FEES));
+            this.quoteBalance += numberOfTokenToSell * (price * (1 - this.takerCommission));
         } else {
             let sellOrder;
             try {
-                sellOrder = await this.client.newOrder(this.symbol, 'SELL', 'MARKET', {
+                sellOrder = await this.client.newOrder(this.symbol, 'SELL', 'LIMIT', {
                     price: price,
-                    quantity: numberOfTokenToSell,
+                    quantity: this.baseBalance,
                     timeInForce: 'GTC',
                 })
             } catch (err) {
@@ -249,11 +253,11 @@ class Trader {
             console.log(sellOrder.data)
         }
 
-        let totalPrice = numberOfTokenToSell * price;
-        let totalFees = numberOfTokenToSell * price * BINANCE_FEES;
-        let portfolioValue = this.baseBalance * price + this.quoteBalance;
+        let totalValue = this.baseBalance * price;
+        let totalFees = totalValue * this.takerCommission;
+        let portfolioValue = totalValue + this.quoteBalance - totalFees;
 
-        let log = `!!!!! ${getDateTime()} - SOLD ${numberOfTokenToSell} at PRICE ${price} for TOTAL ${totalPrice} - FEES: ${totalFees} - PORTFOLIO: ${portfolioValue}\n`
+        let log = `!!!!! ${getDateTime()} - SOLD ${this.baseBalance} at PRICE ${price} for TOTAL ${totalValue} - FEES: ${totalFees} - PORTFOLIO: ${portfolioValue}\n`
         writeToFile(log);
         console.log(log);
     }
