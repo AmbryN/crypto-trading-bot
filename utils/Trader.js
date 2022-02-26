@@ -55,6 +55,10 @@ class Trader {
         return client;
     }
 
+    async cancelOpenOrders() {
+        this.client.cancelOpenOrders(this.symbol);
+    }
+
     /**
     * *Trade a crypto pair on Binance using the Moving Average methods
     * The algorithm will buy if the price goes above the moving average
@@ -206,10 +210,11 @@ class Trader {
         } else {
             let buyOrder;
             try {
-                buyOrder = await this.client.newOrder(this.symbol, 'BUY', 'LIMIT', {
-                    price: price,
-                    quantity: numberOfTokenToBuy,
-                    timeInForce: 'GTC',
+                buyOrder = await this.client.newOrder(this.symbol, 'BUY', 'MARKET', {
+                    //price: price,
+                    //quantity: numberOfTokenToBuy,
+                    //timeInForce: 'GTC',
+                    quoteOrderQty: numberOfTokenToBuy * price,
                 })
             } catch (err) {
                 console.error(`Error: ${err}`)
@@ -240,10 +245,10 @@ class Trader {
         } else {
             let sellOrder;
             try {
-                sellOrder = await this.client.newOrder(this.symbol, 'SELL', 'LIMIT', {
-                    price: price,
+                sellOrder = await this.client.newOrder(this.symbol, 'SELL', 'MARKET', {
+                    //price: price,
                     quantity: this.baseBalance,
-                    timeInForce: 'GTC',
+                    //timeInForce: 'GTC',
                 })
             } catch (err) {
                 `Error: ${err}`

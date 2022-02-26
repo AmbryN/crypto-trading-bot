@@ -9,6 +9,7 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
     .command('trade', '!!!CAUTION!!!: Trade actual crypto on Binance', () => { }, (argv) => trade(argv, env = 'PROD'))
     .command('test', 'TESTMODE: Trade on Binance\'s testnet', () => { }, (argv) => trade(argv, env = 'TEST'))
     .command('sim', 'SIMULATION: Simulate trades using a fake balance but actual prices from Binance', () => { }, (argv) => trade(argv, env = 'SIM'))
+    .command('cancel', 'Cancel open orders', () => { }, (argv) => cancel(argv, env = 'TEST'))
     .demandOption(['c', 'p', 't', 'a', 'r'])
     .option('c', {
         alias: 'crypto',
@@ -43,13 +44,14 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
     .help('h')
     .argv;
 
+
+
 function trade(argv, env) {
     const pair = argv.crypto;
     const percentage = argv.percentage;
     const period = argv.time
     const movingAvgPeriod = argv.average
     const refreshTimeMinutes = argv.refresh
-
     printDatetime();
 
     const trader = new Trader(env, pair, percentage, period, movingAvgPeriod);
@@ -61,4 +63,13 @@ function trade(argv, env) {
 
         console.log("===== END =====");
     }, refreshTimeMinutes * 60 * 1000);
+}
+
+function cancel(argv, env) {
+    const pair = argv.crypto;
+    const percentage = argv.percentage;
+    const period = argv.time
+    const movingAvgPeriod = argv.average
+    const trader = new Trader(env, pair, percentage, period, movingAvgPeriod);
+    trader.cancelOpenOrders();
 }
