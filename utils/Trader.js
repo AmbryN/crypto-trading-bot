@@ -206,10 +206,10 @@ class Trader {
         } else {
             let buyOrder;
             try {
-                buyOrder = await this.client.newOrder(this.symbol, 'BUY', 'LIMIT', {
-                    price: price,
+                buyOrder = await this.client.newOrder(this.symbol, 'BUY', 'MARKET', {
+                    //price: price,
                     quantity: numberOfTokenToBuy,
-                    timeInForce: 'GTC',
+                    //timeInForce: 'GTC',
                 })
             } catch (err) {
                 console.error(`Error: ${err}`)
@@ -240,10 +240,10 @@ class Trader {
         } else {
             let sellOrder;
             try {
-                sellOrder = await this.client.newOrder(this.symbol, 'SELL', 'LIMIT', {
-                    price: price,
+                sellOrder = await this.client.newOrder(this.symbol, 'SELL', 'MARKET', {
+                    //price: price,
                     quantity: this.baseBalance,
-                    timeInForce: 'GTC',
+                    //timeInForce: 'GTC',
                 })
             } catch (err) {
                 `Error: ${err}`
