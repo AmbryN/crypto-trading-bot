@@ -54,7 +54,16 @@ function trade(argv, env) {
     const refreshTimeMinutes = argv.refresh
     printDatetime();
 
-    const trader = new Trader(env, pair, percentage, period, movingAvgPeriod);
+    const trader = new Trader(env, {
+        pair: pair,
+        percentage: percentage,
+        strategy: {
+            type: 'MA',
+            period: period,
+            movingAvgPeriod: movingAvgPeriod,
+        }
+
+    });
 
     setInterval(async () => {
         console.log("===== START =====")
@@ -70,6 +79,14 @@ function cancel(argv, env) {
     const percentage = argv.percentage;
     const period = argv.time
     const movingAvgPeriod = argv.average
-    const trader = new Trader(env, pair, percentage, period, movingAvgPeriod);
+    const trader = new Trader(env, {
+        pair: pair,
+        percentage: percentage,
+        strategy: {
+            type: 'MA',
+            period: period,
+            movingAvgPeriod: movingAvgPeriod,
+        }
+    });
     trader.cancelOpenOrders();
 }

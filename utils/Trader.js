@@ -17,15 +17,15 @@ class Trader {
     baseBalance;
     quoteBalance;
     percentage;
-    period;
-    movingAvgPeriod;
+    strategy;
 
-    constructor(env, symbol, percentage, period, movingAvgPeriod) {
+    constructor(env, options) {
         this.env = env;
-        this.symbol = symbol;
-        this.period = period;
-        this.movingAvgPeriod = movingAvgPeriod;
-        this.percentage = percentage / 100;
+        this.symbol = options.symbol;
+        this.percentage = options.percentage / 100;
+
+        this.strategy = options.strategy
+
         this.client = this.getClient();
         if (this.env === "SIM") {
             this.baseBalance = 0;
@@ -144,7 +144,7 @@ class Trader {
     */
     async getPreviousPrice() {
         // Retrieve the two last "candles" and get the closing price of the previous one
-        const result = await this.client.klines(this.symbol, this.period, { limit: 2 });
+        const result = await this.client.klines(this.symbol, this.strategy.period, { limit: 2 });
         let previousPrice = result.data[0][4]
 
         console.log(`===== Previous price: ${previousPrice} ===== `)
@@ -159,7 +159,7 @@ class Trader {
         // Retrieve the last {movingAvgPeriod} "candles"
         let result;
         try {
-            result = await this.client.klines(this.symbol, this.period, { limit: this.movingAvgPeriod });
+            result = await this.client.klines(this.symbol, this.strategy.period, { limit: this.strategy.movingAvgPeriod });
         } catch (err) {
             console.error(`Error: ${err}`);
             return;
