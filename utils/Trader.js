@@ -2,7 +2,8 @@ const { Spot } = require('@binance/connector');
 const { getDateTime } = require('./Dates.js');
 const { floorToDecimals } = require('./Math.js');
 const { printBalance, printDatetime, writeToFile } = require('./Printer.js');
-const { getAPIKeys } = require('./Keys.js')
+const { getAPIKeys } = require('./Keys.js');
+const { MovingAvg } = require('../strategies/MovingAvg.js');
 
 /**
 * * Binance Trading utility
@@ -19,14 +20,16 @@ class Trader {
     percentage;
     strategy;
 
-    constructor(env, options) {
+    constructor(env, symbol, options) {
         this.env = env;
-        this.symbol = options.symbol;
-        this.percentage = options.percentage / 100;
-
-        this.strategy = options.strategy
-
+        this.symbol = symbol;
         this.client = this.getClient();
+
+        if (options) {
+            this.percentage = options.percentage / 100;
+            this.strategy = new MovingAvg(this.client, this.symbol, options.strategy);
+        }
+
         if (this.env === "SIM") {
             this.baseBalance = 0;
             this.quoteBalance = 100000;
@@ -67,19 +70,19 @@ class Trader {
     async trade() {
         printDatetime();
 
-        if (!(this.env === 'SIM')) await this.getBalances();
-
-        let prices = await this.getPrices()
-        let price = prices.price;
-
-        if (this.shouldBuy(prices)) {
-            await this.buyToken(price);
-        } else if (this.shouldSell(prices)) {
-            await this.sellToken(price);
+        let balances = {
+            baseBalance: this.baseBalance,
+            quoteBalance: this.quoteBalance,
+        }
+        let action = await this.strategy.execute(balances);
+        if (action.type === 'BUY') {
+            await this.buyToken(action.price);
+        } else if (action.type === 'SELL') {
+            await this.sellToken(action.price);
         }
 
         await this.getBalances();
-        printBalance(this.symbol, price, this.baseBalance, this.quoteBalance);
+        printBalance(this.symbol, action.price, this.baseBalance, this.quoteBalance);
     }
 
     /**
@@ -104,97 +107,6 @@ class Trader {
             this.baseBalance = parseFloat(balances.find(balance => balance.asset === baseToken).free)
             this.quoteBalance = parseFloat(balances.find(balance => balance.asset === quoteToken).free)
         }
-    }
-
-    /**
-    * * Gets the prices used for the Moving Average algorithm 
-    * @returns {Object} prices
-    */
-    async getPrices() {
-        let previousPrice = await this.getPreviousPrice()
-        let movingAvg = await this.getMovingAvg();
-        let price = await this.getActualPrice();
-        return {
-            previousPrice,
-            movingAvg,
-            price,
-        }
-    }
-
-    /**
-    * * Used to check if Bot should buy token 
-    */
-    shouldBuy(prices) {
-        let { previousPrice, movingAvg, price } = prices;
-        return price > movingAvg && previousPrice < movingAvg && this.quoteBalance > 10;
-    }
-
-    /**
-    * * Used to check if Bot should sell token 
-    */
-    shouldSell(prices) {
-        let { previousPrice, movingAvg, price } = prices;
-        let should = price < movingAvg && previousPrice > movingAvg && this.baseBalance > 0
-        return should
-    }
-
-    /**
-    * *Get the price of the last period for that symbol
-    * @return {Number} previousPrice : Price of last period
-    */
-    async getPreviousPrice() {
-        // Retrieve the two last "candles" and get the closing price of the previous one
-        const result = await this.client.klines(this.symbol, this.strategy.period, { limit: 2 });
-        let previousPrice = result.data[0][4]
-
-        console.log(`===== Previous price: ${previousPrice} ===== `)
-        return previousPrice;
-    }
-
-    /**
-    * *Calculate moving average from that symbol
-    * @return {Number} movingAvg : Computed moving average
-    */
-    async getMovingAvg() {
-        // Retrieve the last {movingAvgPeriod} "candles"
-        let result;
-        try {
-            result = await this.client.klines(this.symbol, this.strategy.period, { limit: this.strategy.movingAvgPeriod });
-        } catch (err) {
-            console.error(`Error: ${err}`);
-            return;
-        }
-
-        let data = result.data
-        // Compute the moving average
-        let sum = data.reduce((accum, value) => {
-            accum += parseFloat(value[4])
-            return accum
-        }, 0)
-        let movingAvg = floorToDecimals(sum / data.length, 4)
-
-        console.log(`===== Moving Average: ${movingAvg} ===== `)
-        return movingAvg;
-    }
-
-    /**
-    * *Get instant trading price of that symbol
-    * @return {Number} price : Instant trading price of the symbol
-    */
-    async getActualPrice() {
-        // Retrieve instant price
-        let result;
-        try {
-            result = await this.client.tickerPrice(this.symbol);
-        } catch (err) {
-            console.error(`Error: ${err}`);
-            return;
-        }
-
-        let price = parseFloat(result.data.price)
-
-        console.log(`===== Actual Price: ${price} ===== `)
-        return price;
     }
 
     /**

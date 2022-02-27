@@ -6,45 +6,12 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
     .usage('Usage: $0 <command> [options]')
     .example('$0 trade -c ADAUSDT -t 1h -a 25 -r 10', 'Trade with 1 hour time period, using a moving average of 25 periods and a refresh time of 10 min')
     .demandCommand(1)
-    .command('trade', '!!!CAUTION!!!: Trade actual crypto on Binance', () => { }, (argv) => trade(argv, env = 'PROD'))
-    .command('test', 'TESTMODE: Trade on Binance\'s testnet', () => { }, (argv) => trade(argv, env = 'TEST'))
-    .command('sim', 'SIMULATION: Simulate trades using a fake balance but actual prices from Binance', () => { }, (argv) => trade(argv, env = 'SIM'))
+    .command('trade', '!!!CAUTION!!!: Trade actual crypto on Binance', (yargs, helpOrVersionSet) => tradeSetup(yargs), (argv) => trade(argv, env = 'PROD'))
+    .command('test', 'TESTMODE: Trade on Binance\'s testnet', (yargs, helpOrVersionSet) => tradeSetup(yargs), (argv) => trade(argv, env = 'TEST'))
+    .command('sim', 'SIMULATION: Simulate trades using a fake balance but actual prices from Binance', (yargs, helpOrVersionSet) => tradeSetup(yargs), (argv) => trade(argv, env = 'SIM'))
     .command('cancel', 'Cancel open orders', () => { }, (argv) => cancel(argv, env = 'TEST'))
-    .demandOption(['c', 'p', 't', 'a', 'r'])
-    .option('c', {
-        alias: 'crypto',
-        default: 'BTCUSDT',
-        nargs: 1,
-        describe: 'Crypto Pair',
-    })
-    .option('p', {
-        alias: 'percentage',
-        default: '100',
-        nargs: 1,
-        describe: '% of quote balance used for trading',
-    })
-    .option('t', {
-        alias: 'time',
-        default: '1h',
-        nargs: 1,
-        describe: 'Time period',
-    })
-    .option('a', {
-        alias: 'average',
-        default: '25',
-        nargs: 1,
-        describe: 'Moving Average periods',
-    })
-    .option('r', {
-        alias: 'refresh',
-        default: '10',
-        nargs: 1,
-        describe: 'Refresh rate of the bot in minutes',
-    })
     .help('h')
     .argv;
-
-
 
 function trade(argv, env) {
     const pair = argv.crypto;
@@ -54,15 +21,13 @@ function trade(argv, env) {
     const refreshTimeMinutes = argv.refresh
     printDatetime();
 
-    const trader = new Trader(env, {
-        pair: pair,
+    const trader = new Trader(env, pair, {
         percentage: percentage,
         strategy: {
             type: 'MA',
             period: period,
             movingAvgPeriod: movingAvgPeriod,
         }
-
     });
 
     setInterval(async () => {
@@ -74,19 +39,52 @@ function trade(argv, env) {
     }, refreshTimeMinutes * 60 * 1000);
 }
 
+function tradeSetup(yargs) {
+    return yargs
+        .command('MA', 'Moving average strategy', (yargs) => MASetup(yargs), (argv) => trade(argv, env = 'TEST'))
+        .demandCommand(1)
+        .demandOption(['c', 'p'])
+        .option('c', {
+            alias: 'crypto',
+            default: 'BTCUSDT',
+            nargs: 1,
+            describe: 'Crypto Pair',
+        })
+        .option('p', {
+            alias: 'percentage',
+            default: '100',
+            nargs: 1,
+            describe: '% of quote balance used for trading',
+        })
+        .argv
+}
+
+function MASetup(yargs) {
+    return yargs.demandOption(['t', 'a', 'r'])
+        .option('t', {
+            alias: 'time',
+            default: '1h',
+            nargs: 1,
+            describe: 'Time period',
+        })
+        .option('a', {
+            alias: 'average',
+            default: '25',
+            nargs: 1,
+            describe: 'Moving Average periods',
+        })
+        .option('r', {
+            alias: 'refresh',
+            default: '10',
+            nargs: 1,
+            describe: 'Refresh rate of the bot in minutes',
+        })
+        .argv
+}
+
 function cancel(argv, env) {
     const pair = argv.crypto;
-    const percentage = argv.percentage;
-    const period = argv.time
-    const movingAvgPeriod = argv.average
-    const trader = new Trader(env, {
-        pair: pair,
-        percentage: percentage,
-        strategy: {
-            type: 'MA',
-            period: period,
-            movingAvgPeriod: movingAvgPeriod,
-        }
-    });
+
+    const trader = new Trader(env, pair, {})
     trader.cancelOpenOrders();
 }
