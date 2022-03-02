@@ -3,7 +3,8 @@ const { getDateTime } = require('./Dates.js');
 const { floorToDecimals } = require('./Math.js');
 const { printBalance, printDatetime, writeToFile } = require('./Printer.js');
 const { getAPIKeys } = require('./Keys.js');
-const { MovingAvg } = require('../strategies/MovingAvg.js');
+const { SimpleMovingAvg } = require('../strategies/SimpleMovingAvg.js');
+const { ExpMovingAvg } = require('../strategies/ExpMovingAvg.js')
 
 /**
 * * Binance Trading utility
@@ -27,7 +28,14 @@ class Trader {
 
         if (options) {
             this.percentage = options.percentage / 100;
-            this.strategy = new MovingAvg(this.client, this.symbol, options.strategy);
+            switch (options.strategy.type) {
+                case 'MA':
+                    this.strategy = new SimpleMovingAvg(this.client, this.symbol, options.strategy);
+                    break;
+                case 'EMA':
+                    this.strategy = new ExpMovingAvg(this.client, this.symbol, options.strategy);
+                    break;
+            }
         }
 
         if (this.env === "SIM") {
@@ -39,7 +47,7 @@ class Trader {
     }
 
     /**
-    * * Gets the client depending on the environment (trade or simulation) 
+    * * Gets the client depending on the environment 
     * @returns {Object} client
     */
     getClient() {
@@ -58,14 +66,15 @@ class Trader {
         return client;
     }
 
+    /**
+    * * Cancels all open orders for a symbol
+    */
     async cancelOpenOrders() {
         this.client.cancelOpenOrders(this.symbol);
     }
 
     /**
-    * *Trade a crypto pair on Binance using the Moving Average methods
-    * The algorithm will buy if the price goes above the moving average
-    * The algorithm will sell if the price goes uder the moving average
+    * *Trade a crypto pair on Binance using a given strategy
     */
     async trade() {
         printDatetime();

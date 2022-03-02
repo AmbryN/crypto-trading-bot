@@ -24,7 +24,7 @@ function trade(argv, env) {
     const trader = new Trader(env, pair, {
         percentage: percentage,
         strategy: {
-            type: 'MA',
+            type: 'EMA',
             period: period,
             movingAvgPeriod: movingAvgPeriod,
         }
@@ -41,7 +41,8 @@ function trade(argv, env) {
 
 function tradeSetup(yargs) {
     return yargs
-        .command('MA', 'Moving average strategy', (yargs) => MASetup(yargs), (argv) => trade(argv, env = 'TEST'))
+        .command('MA', 'Moving Average Strategy', (yargs) => MASetup(yargs), (argv) => trade(argv, env = 'SIM'))
+        .command('EMA', 'Exponential Moving Average Strategy', (yargs) => MASetup(yargs), (argv) => trade(argv, env = 'SIM'))
         .demandCommand(1)
         .demandOption(['c', 'p'])
         .option('c', {

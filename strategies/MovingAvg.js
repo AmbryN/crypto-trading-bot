@@ -1,5 +1,4 @@
 const { Strategy } = require("./Strategy");
-const { floorToDecimals } = require('../utils/Math.js');
 
 class MovingAvg extends Strategy {
 
@@ -80,32 +79,6 @@ class MovingAvg extends Strategy {
 
         console.log(`===== Previous price: ${previousPrice} ===== `)
         return previousPrice;
-    }
-
-    /**
-    * *Calculate moving average from that symbol
-    * @return {Number} movingAvg : Computed moving average
-    */
-    async getMovingAvg() {
-        // Retrieve the last {movingAvgPeriod} "candles"
-        let result;
-        try {
-            result = await this.client.klines(this.symbol, this.period, { limit: this.movingAvgPeriod });
-        } catch (err) {
-            console.error(`Error: ${err}`);
-            return;
-        }
-
-        let data = result.data
-        // Compute the moving average
-        let sum = data.reduce((accum, value) => {
-            accum += parseFloat(value[4])
-            return accum
-        }, 0)
-        let movingAvg = floorToDecimals(sum / data.length, 4)
-
-        console.log(`===== Moving Average: ${movingAvg} ===== `)
-        return movingAvg;
     }
 
     /**
